@@ -147,6 +147,7 @@ public class MyCopyOnArrayList<E>
      *
      * @return the number of elements in this list
      */
+    //返回数组大小 数组的实际长度大小则等于 size
     public int size() {
         return getArray().length;
     }
@@ -156,6 +157,7 @@ public class MyCopyOnArrayList<E>
      *
      * @return <tt>true</tt> if this list contains no elements
      */
+    //数组是否为为空
     public boolean isEmpty() {
         return size() == 0;
     }
@@ -163,6 +165,7 @@ public class MyCopyOnArrayList<E>
     /**
      * Test for equality, coping with nulls.
      */
+    //如果 o1为null 则直接判断o2是否为null 否则equals对比 返回
     private static boolean eq(Object o1, Object o2) {
         return (o1 == null ? o2 == null : o1.equals(o2));
     }
@@ -178,15 +181,20 @@ public class MyCopyOnArrayList<E>
      */
     private static int indexOf(Object o, Object[] elements,
                                int index, int fence) {
+        //如果元素为null元素 则查找直接返回数组下标
         if (o == null) {
             for (int i = index; i < fence; i++)
                 if (elements[i] == null)
                     return i;
-        } else {
+
+        }
+        //如果元素不为null元素 则查找直接返回数组下标
+        else {
             for (int i = index; i < fence; i++)
                 if (o.equals(elements[i]))
                     return i;
         }
+        //如果没有则返回-1
         return -1;
     }
 
@@ -197,7 +205,9 @@ public class MyCopyOnArrayList<E>
      * @param index first index to search
      * @return index of element, or -1 if absent
      */
+    //返回数组最后一次出现的次数
     private static int lastIndexOf(Object o, Object[] elements, int index) {
+//      以index为界限 像前查找 找到则返回 类似于 indexof()
         if (o == null) {
             for (int i = index; i >= 0; i--)
                 if (elements[i] == null)
@@ -219,14 +229,17 @@ public class MyCopyOnArrayList<E>
      * @param o element whose presence in this list is to be tested
      * @return <tt>true</tt> if this list contains the specified element
      */
+    //是否包含某元素
     public boolean contains(Object o) {
         Object[] elements = getArray();
+        //如果返回下标>=0 则存在
         return indexOf(o, elements, 0, elements.length) >= 0;
     }
 
     /**
      * {@inheritDoc}
      */
+    //用indexof实现直接 点进去方法看即可
     public int indexOf(Object o) {
         Object[] elements = getArray();
         return indexOf(o, elements, 0, elements.length);
@@ -247,14 +260,18 @@ public class MyCopyOnArrayList<E>
      *         <tt>-1</tt> if the element is not found.
      * @throws IndexOutOfBoundsException if the specified index is negative
      */
+    // 返回第一次出现的指定元素在此列表中的索引，从 index 开始向前搜索，如果没有找到该元素，则返回 -1。
     public int indexOf(E e, int index) {
+        //获取array数组
         Object[] elements = getArray();
+
         return indexOf(e, elements, index, elements.length);
     }
 
     /**
      * {@inheritDoc}
      */
+    //lastIndexof()实现
     public int lastIndexOf(Object o) {
         Object[] elements = getArray();
         return lastIndexOf(o, elements, elements.length - 1);
@@ -276,6 +293,7 @@ public class MyCopyOnArrayList<E>
      * @throws IndexOutOfBoundsException if the specified index is greater
      *         than or equal to the current size of this list
      */
+    //lastIndexof()实现
     public int lastIndexOf(E e, int index) {
         Object[] elements = getArray();
         return lastIndexOf(e, elements, index);
@@ -287,9 +305,12 @@ public class MyCopyOnArrayList<E>
      *
      * @return a clone of this list
      */
+    //克隆CopyOnWriteArrayList数组
     public Object clone() {
         try {
+            //调用Object类的浅克隆
             MyCopyOnArrayList c = (MyCopyOnArrayList)(super.clone());
+            //重置当前对象的lock锁
             c.resetLock();
             return c;
         } catch (CloneNotSupportedException e) {
@@ -311,6 +332,7 @@ public class MyCopyOnArrayList<E>
      *
      * @return an array containing all the elements in this list
      */
+
     public Object[] toArray() {
         Object[] elements = getArray();
         return Arrays.copyOf(elements, elements.length);
@@ -394,20 +416,28 @@ public class MyCopyOnArrayList<E>
      *
      * @throws IndexOutOfBoundsException {@inheritDoc}
      */
+
+    //替换当前索引处的值 并返回旧值
     public E set(int index, E element) {
+        //获取当前对象的锁
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
+            //获取 array数组
             Object[] elements = getArray();
+            //获取当前索引在数组中所对象的元素
             E oldValue = get(elements, index);
-
+            //判断 新的元素是否与旧元素相等
             if (oldValue != element) {
                 int len = elements.length;
+                //复制一个新的数组
                 Object[] newElements = Arrays.copyOf(elements, len);
+                //设置索引对应的元素
                 newElements[index] = element;
                 setArray(newElements);
             } else {
                 // Not quite a no-op; ensures volatile write semantics
+                //不相等则不做操作
                 setArray(elements);
             }
             return oldValue;
@@ -779,10 +809,12 @@ public class MyCopyOnArrayList<E>
      * Removes all of the elements from this list.
      * The list will be empty after this call returns.
      */
+
     public void clear() {
         final ReentrantLock lock = this.lock;
         lock.lock();
         try {
+            //直接设置一个新的数组大小为0
             setArray(new Object[0]);
         } finally {
             lock.unlock();
@@ -1018,7 +1050,7 @@ public class MyCopyOnArrayList<E>
 
         return new COWIterator<E>(elements, index);
     }
-
+    //集成自ListIterator接口 这个接口是专门为List类型遍历所服务的
     private static class COWIterator<E> implements ListIterator<E> {
         /** Snapshot of the array */
         private final Object[] snapshot;
@@ -1065,6 +1097,7 @@ public class MyCopyOnArrayList<E>
          * @throws UnsupportedOperationException always; <tt>remove</tt>
          *         is not supported by this iterator.
          */
+        //remove则直接抛出异常
         public void remove() {
             throw new UnsupportedOperationException();
         }
@@ -1074,6 +1107,7 @@ public class MyCopyOnArrayList<E>
          * @throws UnsupportedOperationException always; <tt>set</tt>
          *         is not supported by this iterator.
          */
+        //set则直接抛出异常
         public void set(E e) {
             throw new UnsupportedOperationException();
         }
@@ -1083,6 +1117,7 @@ public class MyCopyOnArrayList<E>
          * @throws UnsupportedOperationException always; <tt>add</tt>
          *         is not supported by this iterator.
          */
+        //add则直接抛出异常
         public void add(E e) {
             throw new UnsupportedOperationException();
         }
@@ -1351,6 +1386,7 @@ public class MyCopyOnArrayList<E>
     }
 
     // Support for resetting lock while deserializing
+    //用unsafe的putObjectVolatile方法 将 lockoffset地址所对应的值(对象) 替换为一个新的ReentrantLock锁 并且类型为Volatile类型
     private void resetLock() {
         UNSAFE.putObjectVolatile(this, lockOffset, new ReentrantLock());
     }
